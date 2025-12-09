@@ -18,7 +18,7 @@ Provides a `computer` tool compatible with [Anthropic's computer use API](https:
 ### Claude Code
 
 ```bash
-claude mcp add computer -- uvx --prerelease=allow boxlite-mcp
+claude mcp add computer -- uvx boxlite-mcp
 ```
 
 ### Claude Desktop
@@ -30,18 +30,16 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
   "mcpServers": {
     "computer": {
       "command": "uvx",
-      "args": ["--prerelease=allow", "boxlite-mcp"]
+      "args": ["boxlite-mcp"]
     }
   }
 }
 ```
 
-> **Note:** `--prerelease=allow` is required until boxlite reaches stable release.
-
 ### Manual Installation
 
 ```bash
-pip install boxlite-mcp --pre
+pip install boxlite-mcp
 ```
 
 ## Available Actions
