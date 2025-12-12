@@ -9,6 +9,8 @@ Provides multiple sandbox tools:
 - sandbox: Generic container for shell commands
 """
 import logging
+import random
+import socket
 import sys
 from typing import Optional
 
@@ -25,6 +27,34 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger("boxlite-mcp")
+
+
+def find_available_port(start: int = 10000, end: int = 65535) -> int:
+    """Find an available port by attempting to bind to it.
+
+    Args:
+        start: Start of port range to search (default: 10000)
+        end: End of port range to search (default: 65535)
+
+    Returns:
+        An available port number
+
+    Raises:
+        RuntimeError: If no available port is found in the range
+    """
+    # Try random ports within the range
+    ports = list(range(start, end + 1))
+    random.shuffle(ports)
+
+    for port in ports[:100]:  # Try up to 100 random ports
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("127.0.0.1", port))
+                return port
+        except OSError:
+            continue
+
+    raise RuntimeError(f"Could not find an available port in range {start}-{end}")
 
 
 class BrowserToolHandler:
@@ -235,8 +265,17 @@ class ComputerToolHandler:
         """Start a new computer instance and return its ID."""
         async with self._lock:
             try:
-                logger.info("Creating ComputerBox...")
-                computer = boxlite.ComputerBox(cpu=self._cpus, memory=self._memory_mib)
+                # Find available ports for HTTP and HTTPS
+                gui_http_port = find_available_port()
+                gui_https_port = find_available_port()
+                logger.info(f"Creating ComputerBox with ports HTTP={gui_http_port}, HTTPS={gui_https_port}...")
+
+                computer = boxlite.ComputerBox(
+                    cpu=self._cpus,
+                    memory=self._memory_mib,
+                    monitor_http_port=gui_http_port,
+                    monitor_https_port=gui_https_port,
+                )
                 await computer.__aenter__()
                 computer_id = computer.id
                 logger.info(f"ComputerBox {computer_id} created. Desktop at: {computer.endpoint()}")
@@ -247,7 +286,11 @@ class ComputerToolHandler:
                 logger.info(f"Desktop {computer_id} is ready")
 
                 self._computers[computer_id] = computer
-                return {"computer_id": computer_id}
+                return {
+                    "computer_id": computer_id,
+                    "gui_http_port": gui_http_port,
+                    "gui_https_port": gui_https_port,
+                }
 
             except Exception as e:
                 error_msg = f"Failed to start ComputerBox: {e}"
@@ -505,7 +548,7 @@ Actions:
 This tool allows you to interact with applications, manipulate files, and browse the web just like a human using a desktop computer. The computer starts with a clean Ubuntu environment with XFCE desktop.
 
 Lifecycle actions:
-- start: Start a new computer instance (returns computer_id)
+- start: Start a new computer instance (returns computer_id, gui_http_port, gui_https_port)
 - stop: Stop a computer instance (requires computer_id)
 
 Computer actions (all require computer_id):
@@ -701,10 +744,12 @@ Screen resolution is 1024x768 pixels.""",
         # Format response based on action
         if action == "start":
             computer_id = result["computer_id"]
+            gui_http_port = result["gui_http_port"]
+            gui_https_port = result["gui_https_port"]
             return [
                 TextContent(
                     type="text",
-                    text=f"Computer started with ID: {computer_id}",
+                    text=f"Computer started with ID: {computer_id}\nGUI HTTP port: {gui_http_port}\nGUI HTTPS port: {gui_https_port}",
                 )
             ]
         elif action == "stop":
