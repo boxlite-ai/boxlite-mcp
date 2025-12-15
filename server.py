@@ -81,7 +81,7 @@ class BrowserToolHandler:
                 logger.info(f"BrowserBox {browser_id} created. Endpoint: {endpoint}")
                 self._browsers[browser_id] = browser
                 return {"browser_id": browser_id, "endpoint": endpoint}
-            except Exception as e:
+            except BaseException as e:
                 error_msg = f"Failed to start BrowserBox: {e}"
                 logger.error(error_msg, exc_info=True)
                 raise RuntimeError(error_msg)
@@ -96,7 +96,7 @@ class BrowserToolHandler:
             try:
                 await browser.__aexit__(None, None, None)
                 logger.info(f"BrowserBox {browser_id} shut down successfully")
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error during BrowserBox {browser_id} cleanup: {e}", exc_info=True)
             finally:
                 del self._browsers[browser_id]
@@ -109,7 +109,7 @@ class BrowserToolHandler:
                 logger.info(f"Shutting down BrowserBox {browser_id}...")
                 try:
                     await browser.__aexit__(None, None, None)
-                except Exception as e:
+                except BaseException as e:
                     logger.error(f"Error during BrowserBox {browser_id} cleanup: {e}", exc_info=True)
             self._browsers.clear()
 
@@ -137,7 +137,7 @@ class CodeInterpreterToolHandler:
                 logger.info(f"CodeBox {interpreter_id} created")
                 self._interpreters[interpreter_id] = interpreter
                 return {"interpreter_id": interpreter_id}
-            except Exception as e:
+            except BaseException as e:
                 error_msg = f"Failed to start CodeBox: {e}"
                 logger.error(error_msg, exc_info=True)
                 raise RuntimeError(error_msg)
@@ -152,7 +152,7 @@ class CodeInterpreterToolHandler:
             try:
                 await interpreter.__aexit__(None, None, None)
                 logger.info(f"CodeBox {interpreter_id} shut down successfully")
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error during CodeBox {interpreter_id} cleanup: {e}", exc_info=True)
             finally:
                 del self._interpreters[interpreter_id]
@@ -171,7 +171,7 @@ class CodeInterpreterToolHandler:
                 logger.info(f"Shutting down CodeBox {interpreter_id}...")
                 try:
                     await interpreter.__aexit__(None, None, None)
-                except Exception as e:
+                except BaseException as e:
                     logger.error(f"Error during CodeBox {interpreter_id} cleanup: {e}", exc_info=True)
             self._interpreters.clear()
 
@@ -199,7 +199,7 @@ class SandboxToolHandler:
                 logger.info(f"SimpleBox {sandbox_id} created")
                 self._sandboxes[sandbox_id] = sandbox
                 return {"sandbox_id": sandbox_id}
-            except Exception as e:
+            except BaseException as e:
                 error_msg = f"Failed to start SimpleBox: {e}"
                 logger.error(error_msg, exc_info=True)
                 raise RuntimeError(error_msg)
@@ -214,7 +214,7 @@ class SandboxToolHandler:
             try:
                 await sandbox.__aexit__(None, None, None)
                 logger.info(f"SimpleBox {sandbox_id} shut down successfully")
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error during SimpleBox {sandbox_id} cleanup: {e}", exc_info=True)
             finally:
                 del self._sandboxes[sandbox_id]
@@ -237,7 +237,7 @@ class SandboxToolHandler:
                 logger.info(f"Shutting down SimpleBox {sandbox_id}...")
                 try:
                     await sandbox.__aexit__(None, None, None)
-                except Exception as e:
+                except BaseException as e:
                     logger.error(f"Error during SimpleBox {sandbox_id} cleanup: {e}", exc_info=True)
             self._sandboxes.clear()
 
@@ -308,7 +308,7 @@ class ComputerToolHandler:
             try:
                 await computer.__aexit__(None, None, None)
                 logger.info(f"ComputerBox {computer_id} shut down successfully")
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error during ComputerBox {computer_id} cleanup: {e}", exc_info=True)
             finally:
                 del self._computers[computer_id]
@@ -323,7 +323,7 @@ class ComputerToolHandler:
                 try:
                     await computer.__aexit__(None, None, None)
                     logger.info(f"ComputerBox {computer_id} shut down successfully")
-                except Exception as e:
+                except BaseException as e:
                     logger.error(
                         f"Error during ComputerBox {computer_id} cleanup: {e}",
                         exc_info=True,
@@ -664,7 +664,7 @@ Screen resolution is 1024x768 pixels.""",
             else:
                 return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
-        except Exception as exception:
+        except BaseException as exception:
             logger.error(f"Tool execution error: {exception}", exc_info=True)
             return [
                 TextContent(
@@ -871,7 +871,9 @@ Screen resolution is 1024x768 pixels.""",
             )
     except KeyboardInterrupt:
         logger.info("Server interrupted by user")
-    except Exception as e:
+    except BaseException as e:
+        if isinstance(e, (SystemExit, GeneratorExit)):
+            raise
         logger.error(f"Server error: {e}", exc_info=True)
     finally:
         await computer_handler.shutdown_all()
