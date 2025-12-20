@@ -520,3 +520,72 @@ async def test_sandbox_with_readonly_volumes():
             await client.call_sandbox("stop", sandbox_id=sandbox_id)
     finally:
         await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_sandbox_with_empty_volumes():
+    """Test sandbox with empty volumes parameter (should work without error)."""
+    client = MCPTestClient()
+    try:
+        await client.connect()
+
+        # Start sandbox without volumes (None/empty)
+        result = await client.call_sandbox("start", image="alpine")
+        assert result.content
+        text = result.content[0].text
+        assert "Sandbox started" in text
+        sandbox_id = text.split(": ")[1].strip()
+
+        # Execute a simple command to verify it works
+        result = await client.call_sandbox(
+            "exec",
+            sandbox_id=sandbox_id,
+            command="echo 'test'"
+        )
+        assert result.content
+        assert "test" in result.content[0].text
+
+        # Stop sandbox
+        await client.call_sandbox("stop", sandbox_id=sandbox_id)
+    finally:
+        await client.disconnect()
+
+
+# ============================================================================
+# Computer Tool Tests with Volumes
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_computer_start_stop_with_empty_volumes():
+    """Test computer start and stop with empty volumes parameter (should work without error)."""
+    client = MCPTestClient()
+    try:
+        await client.connect()
+
+        # Start computer without volumes
+        result = await client.call_computer("start")
+        assert result.content
+        text = result.content[0].text
+        assert "Computer started" in text
+
+        # Extract computer_id from response
+        lines = text.split("\n")
+        computer_id = None
+        for line in lines:
+            if "Computer started with ID:" in line:
+                computer_id = line.split(": ")[1].strip()
+                break
+        assert computer_id
+
+        # Take a screenshot to verify it works
+        result = await client.call_computer("screenshot", computer_id=computer_id)
+        assert result.content
+        content = result.content[0]
+        assert hasattr(content, 'data')
+
+        # Stop computer
+        result = await client.call_computer("stop", computer_id=computer_id)
+        assert result.content
+        assert "stopped" in result.content[0].text.lower()
+    finally:
+        await client.disconnect()

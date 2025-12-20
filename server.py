@@ -193,13 +193,16 @@ class SandboxToolHandler:
         async with self._lock:
             try:
                 logger.info(f"Creating SimpleBox with image '{image}'...")
-                # Convert volume list format to tuples for boxlite
-                boxlite_volumes = None
+                # Build kwargs for SimpleBox
+                sandbox_kwargs = {"image": image}
+
+                # Convert volume list format to tuples for boxlite (only if provided)
                 if volumes:
                     boxlite_volumes = [tuple(v) for v in volumes]
                     logger.info(f"Creating SimpleBox with volumes: {boxlite_volumes}")
+                    sandbox_kwargs["volumes"] = boxlite_volumes
 
-                sandbox = boxlite.SimpleBox(image=image, volumes=boxlite_volumes)
+                sandbox = boxlite.SimpleBox(**sandbox_kwargs)
                 await sandbox.__aenter__()
                 sandbox_id = sandbox.id
                 logger.info(f"SimpleBox {sandbox_id} created")
@@ -276,19 +279,21 @@ class ComputerToolHandler:
                 gui_https_port = find_available_port()
                 logger.info(f"Creating ComputerBox with ports HTTP={gui_http_port}, HTTPS={gui_https_port}...")
 
-                # Convert volume list format to tuples for boxlite
-                boxlite_volumes = None
+                # Build kwargs for ComputerBox
+                computer_kwargs = {
+                    "cpu": self._cpus,
+                    "memory": self._memory_mib,
+                    "gui_http_port": gui_http_port,
+                    "gui_https_port": gui_https_port,
+                }
+
+                # Convert volume list format to tuples for boxlite (only if provided)
                 if volumes:
                     boxlite_volumes = [tuple(v) for v in volumes]
                     logger.info(f"Creating ComputerBox with volumes: {boxlite_volumes}")
+                    computer_kwargs["volumes"] = boxlite_volumes
 
-                computer = boxlite.ComputerBox(
-                    cpu=self._cpus,
-                    memory=self._memory_mib,
-                    gui_http_port=gui_http_port,
-                    gui_https_port=gui_https_port,
-                    volumes=boxlite_volumes,
-                )
+                computer = boxlite.ComputerBox(**computer_kwargs)
                 await computer.__aenter__()
                 computer_id = computer.id
                 logger.info(f"ComputerBox {computer_id} created with ports HTTP={gui_http_port}, HTTPS={gui_https_port}")
