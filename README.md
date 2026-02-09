@@ -84,6 +84,34 @@ uv sync --extra dev
 uv run pytest
 ```
 
+### Connect Local Server to Claude Code
+
+```bash
+claude mcp add boxlite -s local \
+  -e BOXLITE_HOME=$HOME/.boxlite-mcp \
+  -- uv run --directory /path/to/boxlite-mcp python -m server
+```
+
+> **Note:** Environment variables must be passed via `-e`, not inline in the args. MCP stdio servers bypass the shell, so `VAR=value command` syntax won't work.
+
+### Connect Local Server to Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+
+```json
+{
+  "mcpServers": {
+    "boxlite": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/boxlite-mcp", "python", "-m", "server"],
+      "env": {
+        "BOXLITE_HOME": "/path/to/.boxlite-mcp"
+      }
+    }
+  }
+}
+```
+
 ## License
 
 Apache-2.0
